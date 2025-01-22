@@ -3,7 +3,6 @@ from fastapi import FastAPI
 
 from app.routers import users, security,students, buildings, rooms, permission_group_permission_link
 from app.routers import schedules,credit,teachers,credit,permission_group,permission_group_permission_link, Enrollment
-
 # app = FastAPI(dependencies=[Depends(get_query_token)])
 app = FastAPI()
 
