@@ -1,7 +1,6 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, APIRouter, Query
 from sqlmodel import Session, select, or_
-from datetime import datetime
 from app.dependencies import get_session
 from app.format_models import Log, FilterParams
 from app.db_models import User, Log
@@ -10,18 +9,20 @@ from inspect import currentframe
 
 router = APIRouter()
 
-@router.post("/login", tags=["logs"])
-async def login(username, password: str, session: Annotated[Session, Depends(get_session)],
-                   current_user: Annotated[User, Depends(get_session)]):
-    user2 = Session.exec(select(Log).filter(Log.username == username)).first()
-    if not current_user or (user2 and user2.hashed_password != password):
-        raise HTTPException(status_code=404, detail="Invalid credentials")
 
-    log = Log(user_id= current_user.id, username= current_user.name, timestamp= datetime.now())
-    session.add(log)
-    session.commit()
-
-    return {"massage": "Login successful"}
+# @router.post("/login", tags=["logs"])
+# async def add_log(username, password: str, session: Annotated[Session, Depends(get_session)],
+#                   current_user: Annotated[User, Depends(get_session)]):
+#     user_added = Session.exec(select(Log).filter(Log.username == username)).first()
+#     if not current_user or (user_added and user_added.hashed_password != password):
+#         raise HTTPException(status_code=404, detail="Invalid credentials")
+#
+#     log = Log(user_id=current_user.id, username=current_user.name, timestamp=datetime.now())
+#     session.add(log)
+#     session.commit()
+#
+#     return {"massage": "Login successful"}
+#
 
 @router.get("/log/read/{log_id}", tags=["logs"])
 async def read_log(session: Annotated[Session, Depends(get_session)]):
@@ -30,9 +31,9 @@ async def read_log(session: Annotated[Session, Depends(get_session)]):
         raise HTTPException(status_code=404, detail="no logs found")
     return logs
 
-@router.delete("/log/delete/{log_id}", tags=["logs"])
-async def delete_log(log_id: Log.id,session: Annotated[Session, Depends(get_session)]):
 
+@router.delete("/log/delete/{log_id}", tags=["logs"])
+async def delete_log(log_id: Log.id, session: Annotated[Session, Depends(get_session)]):
     delete_logs = session.get(Log, log_id)
     if delete_logs:
         session.delete(delete_logs)
@@ -40,6 +41,7 @@ async def delete_log(log_id: Log.id,session: Annotated[Session, Depends(get_sess
         session.refresh(delete_logs)
         return {"details": "log deleted successfully"}
     raise HTTPException(status_code=404, detail=" log not found")
+
 
 @router.get("/get/login", tags=["logs"])
 async def get_logins(
