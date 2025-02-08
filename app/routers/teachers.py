@@ -1,6 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlmodel import Session, select, or_
+
+from sqlmodel import Session, select, update, delete, or_
+
 from app.db_models import Teacher, User
 from app.dependencies import get_session
 from app.routers.security import get_current_user, CREDENTIALS_EXCEPTION
@@ -11,12 +13,11 @@ router = APIRouter()
 
 
 @router.post("/teachers/add", tags=["teachers"], response_model=Teacher)
-async def add_teacher(teacher1: Teacher,
-                      current_user: Annotated[User, Depends(get_current_user)],
-                      session: Annotated[Session, Depends(get_session)]
+async def post_teacher(teacher1: Teacher,
+                       current_user: Annotated[User, Depends(get_current_user)],
+                       session: Annotated[Session, Depends(get_session)]
 
-                      ):
-    """Add a new teacher."""
+                       ):
     try:
         if current_user.permission_group.name != 'full_permission_group':
             if currentframe().f_code.co_name not in current_user.permission_group.permissions:
@@ -38,7 +39,6 @@ async def get_teachers(
         filter_query: Annotated[FilterParams, Query()]
 
 ):
-    """Retrieve all teachers with pagination."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -48,7 +48,7 @@ async def get_teachers(
 
     if filter_query.query:
         query = query.where(or_(Teacher.name.contains(filter_query.query),
-                                Teacher.email_address.contains(filter_query.query)))  # Filter by name (partial match)
+                                Teacher.email_address.contains(filter_query.query)))  # Filter by name or email_address
 
     if filter_query.order_by:
         try:
@@ -58,10 +58,6 @@ async def get_teachers(
             raise HTTPException(status_code=400, detail=f"Invalid sort field: {filter_query.order_by}")
 
     query = query.offset((filter_query.page_number - 1) * filter_query.page_size).limit(filter_query.page_size)
-    # # Call the paginate function
-    # paginated_result = paginate(query=query, session=session, page=page, page_size=page_size)
-    # if not paginate:
-    #     raise HTTPException(status_code=404, detail=f"No {paginate} found")
 
     return session.exec(query).all()
 
@@ -73,7 +69,6 @@ async def get_teacher(teacher_id: int,
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
-    """Retrieve a teacher by ID."""
     teacher2 = session.get(Teacher, teacher_id)
     if not teacher2:
         raise HTTPException(status_code=404, detail="Teacher not found")
@@ -85,7 +80,6 @@ async def update_teacher(
         teacher_id: int, teacher_data: Teacher, current_user: Annotated[User, Depends(get_current_user)],
         session: Annotated[Session, Depends(get_session)]
 ):
-    """Update a teacher's information."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -103,7 +97,6 @@ async def update_teacher(
 @router.delete("/teachers/{teacher_id}", tags=["teachers"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_teacher(teacher_id: int, current_user: Annotated[User, Depends(get_current_user)],
                          session: Annotated[Session, Depends(get_session)]):
-    """Delete a teacher by ID."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -113,3 +106,4 @@ async def delete_teacher(teacher_id: int, current_user: Annotated[User, Depends(
     session.delete(teacher)
     session.commit()
     return {"detail": "Teacher deleted successfully"}
+
