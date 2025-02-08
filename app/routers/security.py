@@ -1,15 +1,14 @@
 import jwt
 from typing import Annotated
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlmodel import Session, select
 from app.format_models import Token, TokenData
-from app.db_models import User
+from app.db_models import User, Log
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.dependencies import get_session
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -24,10 +23,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 CREDENTIALS_EXCEPTION = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -75,8 +74,16 @@ async def get_current_user(token: TokenDep, session: Annotated[Session, Depends(
     return user
 
 
+async def add_log(session: Annotated[Session, Depends(get_session)],
+                  current_user: Annotated[User, Depends(get_session)]):
+    log = Log(user=current_user, date_time=datetime.now(), ip_address="")
+    session.add(log)
+    session.commit()
+
+
 @router.post("/token", tags=["security"])
-async def login_for_access_token(form_data: LoginFormDep, session: Annotated[Session, Depends(get_session)]) -> Token:
+async def login_for_access_token(form_data: LoginFormDep, session: Annotated[Session, Depends(get_session)],
+                                 background_tasks: BackgroundTasks) -> Token:
     user = authenticate_user(form_data.username, form_data.password, session)
     if not user:
         raise HTTPException(
@@ -84,11 +91,13 @@ async def login_for_access_token(form_data: LoginFormDep, session: Annotated[Ses
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.mobile}, expires_delta=access_token_expires
-    )
-    return Token(access_token=access_token, token_type="bearer")
+    else:
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.mobile}, expires_delta=access_token_expires
+        )
 
+        background_tasks.add_task(add_log, session=session, current_user=user)
+        return Token(access_token=access_token, token_type="bearer")
 
-print(get_password_hash('string'))
+# print(get_password_hash('admin'))
