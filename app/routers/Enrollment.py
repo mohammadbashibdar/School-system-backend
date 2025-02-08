@@ -1,25 +1,14 @@
 from typing import Annotated, List
 from inspect import currentframe
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select
+from sqlmodel import Session, select, or_
 from starlette import status
 from app.dependencies import get_session
-from app.db_models import User, Presenting, Enrollment
+from app.db_models import User, Enrollment
 from app.routers.security import get_current_user, CREDENTIALS_EXCEPTION
-from app.format_models import EnrollmentPublic
+from app.format_models import EnrollmentPublic, FilterParams
 
 router = APIRouter()
-
-@router.get("/presenting/", tags=["presenting"], response_model= List[Presenting])
-async def get_presenting_list (current_user: Annotated[User,Depends(get_current_user)],
-                       session: Annotated[Session, Depends(get_session)]):
-    if current_user.permission_group.name != 'full_permission_group':
-        if currentframe().f_code.co_name not in current_user.permission_group.permissions:
-            raise CREDENTIALS_EXCEPTION
-    presenting =  session.exec(select(Presenting)).all()
-    if presenting:
-        return presenting
-    raise HTTPException(status_code=404, detail="Presenting not found!")
 
 @router.post("/enrollment/", tags=["Enrollment"], response_model= List[Enrollment])
 async def add_enrollment (enrollment: EnrollmentPublic,
@@ -38,25 +27,31 @@ async def add_enrollment (enrollment: EnrollmentPublic,
         raise  HTTPException(status_code=400, detail= f"An Error occurred during adding Enrollment: {e}")
 
 #Get all Enrollment
-@router.get("/enrollment/", tags=["Enrollment"], response_model=List[Enrollment])
-async def get_all_enrollment(current_user: Annotated[User, Depends(get_current_user)],
-        session: Annotated[Session, Depends(get_session)],
-        enrollment_name: str = Query(None, description="Search by last name (optional)"),
-        limit: int = 50,
-        offset: int = 0):
 
+@router.get("/enrollment/", tags=["Enrollment"], response_model=List[Enrollment])
+async def get_all_enrollments(
+        current_user: Annotated[User, Depends(get_current_user)],
+        session: Annotated[Session, Depends(get_session)],
+        query_filter: Annotated[FilterParams, Query()]
+):
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
-    query = select(Enrollment)
-    if enrollment_name:
-        query = query.where(Enrollment.name.like(f"%{enrollment_name}%"))
-    query = query.offset(offset).limit(limit)
-    result = session.exec(query).all()
-    if not result:
-        raise HTTPException(status_code=404, detail="Enrollment not found!")
 
-    return result
+    query = select(Enrollment)
+    if query_filter.query:
+        query = query.where(or_(Enrollment.name.contains(query_filter.query),
+                                Enrollment.id.contains(query_filter.query)))  # Filter by name (partial match)
+
+    if query_filter.order_by:
+        try:
+            sort_column = getattr(Enrollment, query_filter.order_by)  # Get the field from the model
+            query = query.order_by(sort_column.asc() if query_filter.order_type == "asc" else sort_column.desc())
+        except AttributeError:
+            raise HTTPException(status_code=400, detail=f"Invalid sort field: {query_filter.order_by}")
+
+    query = query.offset((query_filter.page_number - 1) * query_filter.page_size).limit(query_filter.page_size)
+    return session.exec(query).all()
 
 
 #Read Enrollment by ID
