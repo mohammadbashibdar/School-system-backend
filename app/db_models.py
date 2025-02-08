@@ -209,6 +209,7 @@ class Payment(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     enrollment_id: int = Field(foreign_key="enrollment.id")
     date_time: datetime
+    due_date_time: datetime
     status: int = Field(default=0)  # صفر: در انتظار    یک: پرداخت شده   دو: لغو شده
     price: int
 
@@ -268,10 +269,8 @@ class Calendar(SQLModel, table=True):
     is_holiday: bool = Field(default=False)  # آیا تعطیل است؟
 
 
-engine = create_engine("postgresql://postgres:salar0927305798@localhost:5432/postgres", echo=True)
-
-
-# engine = create_engine("postgresql://postgres:1234@127.0.0.1:5432/postgres", echo=True)
+# engine = create_engine("postgresql://postgres:potgres@127.0.01:5432/postgres", echo=True)
+engine = create_engine("postgresql://postgres:postgres@127.0.0.1:5432/postgres", echo=True)
 
 
 def create_db_and_tables():
@@ -283,9 +282,10 @@ def add_super_user():
         try:
             full_permission_group = PermissionGroup(name="full_permission_group")
             # permissions = [Permission(name=name) for name in ["get_user", "superuser"]]
-            super_user = User(name="super_user2", mobile="05555555555",
-                              hashed_password='$2b$12$3bCUlJ.TtD2m6TCGD0zv7OdZOBFUZs.Yz1uwfwIIf/y6OvdhGdVD2',
+            super_user = User(name="super_user2", mobile="admin",
+                              hashed_password='$2b$12$pK3PH8gCNIRWowRceXUEveKZPxowdjmenV63iR260iEBstKGBXF7e',
                               # "$2y$12$fMlP7vIBpLkqoshqF7faYuc6Fux2pSeuSad00w0wui6FlqGXs.h5K",
+                              # admin => $2b$12$pK3PH8gCNIRWowRceXUEveKZPxowdjmenV63iR260iEBstKGBXF7e
                               permission_group=full_permission_group)
             session.add(full_permission_group)
 
@@ -299,11 +299,10 @@ def add_super_user():
 
 
 def main():
-    create_db_and_tables()
-    add_super_user()
+    # create_db_and_tables()
+    # add_super_user()
+    pass
 
 
 if __name__ == "__main__":
     main()
-
-
