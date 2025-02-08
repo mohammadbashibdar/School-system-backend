@@ -11,20 +11,25 @@ router = APIRouter()
 
 
 @router.post("/users/add", tags=["users"], response_model=User)
-async def add_user(user: UserPublic, session: Annotated[Session, Depends(get_session)],
+async def add_user(user: UserPublic, session: Annotated[User, Depends(get_current_user)],
                    current_user: Annotated[Session, Depends(get_session)]):
     try:
         if current_user.permission_group.name != 'full_permission_group':
             if currentframe().f_code.co_name not in current_user.permission_group.permissions:
                 raise CREDENTIALS_EXCEPTION
         temp_user = User.model_validate(user)
-        session.add(temp_user)
-        session.commit()
-        session.refresh(temp_user)
-        return temp_user
+        existing_user = session.exec(select(User).where(User.mobile == user.mobile)).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+        if not existing_user:
+            session.add(temp_user)
+            session.commit()
+            session.refresh(temp_user)
+            return temp_user
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"An Error occurred during adding User: {e}")
+
 
 @router.get("/users/me", tags=["users"], response_model=UserPublic)
 async def read_user_me(current_user: Annotated[User, Depends(get_current_user)]):
@@ -54,10 +59,8 @@ async def get_all_users(
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
-
     # Define the base query
     query = select(User)
-
     if filter_query.query:
         query = query.where(or_(User.name.contains(filter_query.query),
                                 User.email_address.contains(filter_query.query)))
@@ -73,9 +76,8 @@ async def get_all_users(
     return session.exec(query).all()
 
 
-
 @router.put("/users/update/{user_id}", tags=["users"], response_model=UserPublic)
-async def update_user(user_id: int,user_data: User,  current_user: Annotated[User, Depends(get_current_user)],
+async def update_user(user_id: int, user_data: User, current_user: Annotated[User, Depends(get_current_user)],
                       session: Annotated[Session, Depends(get_session)]):
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
@@ -91,7 +93,8 @@ async def update_user(user_id: int,user_data: User,  current_user: Annotated[Use
         return update_users
     raise HTTPException(status_code=404, detail="users not found!")
 
-@router.delete("/user/{user_id}", tags=["users"])
+
+@router.delete("/users/delete/{user_id}", tags=["users"])
 async def delete_user(user_id: int, current_user: Annotated[User, Depends(get_current_user)],
                       session: Annotated[Session, Depends(get_session)]):
     if current_user.permission_group.name != 'full_permission_group':
@@ -101,6 +104,5 @@ async def delete_user(user_id: int, current_user: Annotated[User, Depends(get_cu
     if delete_users:
         session.delete(delete_users)
         session.commit()
-        return {"detail" : "user deleted successfully" }
+        return {"detail": "user deleted successfully"}
     raise HTTPException(status_code=404, detail="User not found!")
-
