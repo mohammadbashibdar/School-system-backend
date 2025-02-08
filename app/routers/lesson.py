@@ -19,7 +19,6 @@ async def post_lesson(lesson1: Lesson,
                       session: Annotated[Session, Depends(get_session)]
 
                       ):
-    """Add a new lesson."""
     try:
         if current_user.permission_group.name != 'full_permission_group':
             if currentframe().f_code.co_name not in current_user.permission_group.permissions:
@@ -41,7 +40,6 @@ async def get_lessons(
         filter_query: Annotated[FilterParams, Query()]
 
 ):
-    """Retrieve all lessons with pagination."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -71,7 +69,6 @@ async def get_lesson(lesson_id: int,
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
-    """Retrieve a lesson by ID."""
     course2 = session.get(Lesson, lesson_id)
     if not course2:
         raise HTTPException(status_code=404, detail="lesson not found")
@@ -83,7 +80,6 @@ async def update_lesson(
         lesson_id: int, course_data: Lesson, current_user: Annotated[User, Depends(get_current_user)],
         session: Annotated[Session, Depends(get_session)]
 ):
-    """Update a lesson's information."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -101,7 +97,6 @@ async def update_lesson(
 @router.delete("/lessons/{lesson_id}", tags=["lessons"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_lesson(lesson_id: int, current_user: Annotated[User, Depends(get_current_user)],
                         session: Annotated[Session, Depends(get_session)]):
-    """Delete a lesson by ID."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -124,7 +119,6 @@ async def add_category(category1: Category,
                        session: Annotated[Session, Depends(get_session)]
 
                        ):
-    """Add a new category."""
     try:
         if current_user.permission_group.name != 'full_permission_group':
             if currentframe().f_code.co_name not in current_user.permission_group.permissions:
@@ -146,7 +140,6 @@ async def get_categories(
         filter_query: Annotated[FilterParams, Query()]
 
 ):
-    """Retrieve all categories with pagination."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -168,8 +161,6 @@ async def get_categories(
 
     return session.exec(query).all()
 
-
-# ? duplicate ( check app.routers.category)
 @router.get("/categories/{category_id}", tags=["categories"], response_model=Category)
 async def get_category(category_id: int,
                        current_user: Annotated[User, Depends(get_current_user)],
@@ -177,7 +168,6 @@ async def get_category(category_id: int,
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
-    """Retrieve a course by ID."""
     category2 = session.get(Lesson, category_id)
     if not category2:
         raise HTTPException(status_code=404, detail="Category not found.")
@@ -189,7 +179,6 @@ async def update_category(
         lesson_id: int, course_data: Lesson, current_user: Annotated[User, Depends(get_current_user)],
         session: Annotated[Session, Depends(get_session)]
 ):
-    """Update a category's information."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -207,7 +196,6 @@ async def update_category(
 @router.delete("/categories/{category_id}", tags=["categories"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(category_id: int, current_user: Annotated[User, Depends(get_current_user)],
                           session: Annotated[Session, Depends(get_session)]):
-    """Delete a category by ID."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION

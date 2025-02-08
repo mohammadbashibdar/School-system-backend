@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 
-from sqlmodel import Session, select, update, delete, or_
+from sqlmodel import Session, select, or_
 
 from app.db_models import Teacher, User
 from app.dependencies import get_session

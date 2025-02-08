@@ -13,10 +13,7 @@ router = APIRouter()
 @router.post("/courses/add", tags=["courses"], response_model=Course)
 async def post_course(course1: Course,
                       current_user: Annotated[User, Depends(get_current_user)],
-                      session: Annotated[Session, Depends(get_session)]
-
-                      ):
-    """Add a new course."""
+                      session: Annotated[Session, Depends(get_session)]):
     try:
         if current_user.permission_group.name != 'full_permission_group':
             if currentframe().f_code.co_name not in current_user.permission_group.permissions:
@@ -38,7 +35,7 @@ async def get_courses(
         filter_query: Annotated[FilterParams, Query()]
 
 ):
-    """Retrieve all courses with pagination."""
+
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -66,12 +63,10 @@ async def get_students_by_course(
         course_id: int,
         session: Annotated[Session, Depends(get_session)],
         current_user: Annotated[User, Depends(get_current_user)]):
-    """Retrieve a list of students for a specific course."""
     if current_user.permission_group.name != "full_permission_group":
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
 
-    # ? why join when you have learned about ORMs ????????
     # statement = (
     #     select(Student.name)
     #     .join(Enrollment, Enrollment.student_id == Student.id)
@@ -109,7 +104,6 @@ async def update_course(
         course_id: int, course_data: Course, current_user: Annotated[User, Depends(get_current_user)],
         session: Annotated[Session, Depends(get_session)]
 ):
-    """Update a course's information."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
@@ -127,7 +121,6 @@ async def update_course(
 @router.delete("/courses/{course_id}", tags=["courses"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_course(course_id: int, current_user: Annotated[User, Depends(get_current_user)],
                         session: Annotated[Session, Depends(get_session)]):
-    """Delete a course by ID."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION

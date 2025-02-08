@@ -85,7 +85,7 @@ async def update_enrollment (enrollment_id: int, enrollment_data: Enrollment,
         return updated_enrollment
     raise HTTPException(status_code = 404, detail = "Enrollment not found!")
 
-#Delete Enrollment
+
 @router.delete("/enrollment/{enrollment_id}", tags = ["Enrollment"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_enrollment(enrollment_id: int, current_user: Annotated[User,Depends(get_current_user)],
                             session: Annotated[Session, Depends(get_session)]):

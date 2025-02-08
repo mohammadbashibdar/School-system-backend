@@ -21,7 +21,6 @@ async def get_permission(
         filter_query: Annotated[FilterParams, Query()]
 
 ):
-    """Retrieve all permissions with pagination."""
     if current_user.permission_group.name != 'full_permission_group':
         if currentframe().f_code.co_name not in current_user.permission_group.permissions:
             raise CREDENTIALS_EXCEPTION
